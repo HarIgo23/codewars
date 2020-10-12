@@ -26,37 +26,51 @@ def crosstable(players, results):
     score = []
     for res in results:
         score.append([template_one_score.format(" " if el is None else el if el != 0.5 else "=") for el in res])
-    # TODO First sort by pts
-    sort_sb = list(sorted(sb, reverse=True))
-    prev_ind, prev_rank = sb.index(sort_sb[0]), 1
-    ranks = {prev_rank: [dict(name=players[prev_ind], res=score[prev_ind], pts=pts[prev_ind], sb=sb[prev_ind],
-                              ind=prev_ind)]}
-    for i in range(1, count):
-        if sort_sb[i-1] == sort_sb[i]:
-            ind = sb.index(sort_sb[i], prev_ind+1)
-            ranks[prev_rank].extend([dict(name=players[ind], res=score[ind], pts=pts[ind], sb=sb[ind], ind=ind)])
-            ranks[prev_rank] = sorted(ranks[prev_rank], key=lambda el: el['name'].split(' ')[1])
-        else:
-            prev_rank = i + 1
-            ind = sb.index(sort_sb[i])
-            ranks[prev_rank] = [dict(name=players[ind], res=score[ind], pts=pts[ind], sb=sb[ind], ind=ind)]
-        prev_ind = ind
 
-    order = [el['ind'] for rank in ranks.values() for el in rank]
-    print(ranks)
-    for key, rank in ranks.items():
-        r = key
-        for i in range(len(rank)):
-            el = rank[i]
-            el['res'] = [el['res'][order[i]] for i in range(count)]
-            s = template_rank.format(r) + template.format(el["name"], " ".join(el['res'])) + \
-                template_score.format(el['pts'], el['sb']) + "\n"
-            result += s
-            if i == 0:
-                r = ' '
+    list_sort = [dict(pts=pts[i], sb=sb[i], ind=i, name=players[i], res=score[i]) for i in range(count)]
+    sort_pts = list(sorted(list_sort, key=lambda el: el['pts'], reverse=True))
+    duplicate: bool = False
+    start = 0
+    for i in range(0, count):
+        if not duplicate and i != count-1 and sort_pts[i + 1]['pts'] == sort_pts[i]['pts']:
+            duplicate = True
+            start = i
+        elif duplicate and (i == count-1 or sort_pts[i + 1]['pts'] != sort_pts[i]['pts']):
+            sort_pts[start:i+1] = sort_by_sb(list(sorted(sort_pts[start:i+1], key=lambda el: el['sb'], reverse=True)),
+                                             rank=start+1)
+            duplicate = False
+            continue
+        elif not duplicate:
+            sort_pts[i]['rank'] = i + 1
+    order = [rank['ind'] for rank in sort_pts]
+    for rank in sort_pts:
+        el = rank
+        el['res'] = [el['res'][order[i]] for i in range(count)]
+        s = template_rank.format(el['rank']) + template.format(el["name"], " ".join(el['res'])) + \
+            template_score.format(el['pts'], el['sb']) + "\n"
+        result += s
     return result.rstrip('\n')
 
 
+def sort_by_sb(arr: list, rank: int):
+    duplicate, start = False, 0
+    for i in range(len(arr)):
+        if not duplicate and i != len(arr)-1 and arr[i]['sb'] == arr[i + 1]['sb']:
+            arr[i]['rank'] = " "
+            duplicate = True
+            start = i
+        elif duplicate and i != len(arr) - 1 and arr[i]['sb'] == arr[i+1]['sb']:
+            arr[i]['rank'] = " "
+        elif duplicate and (i == len(arr)-1 or arr[i]['sb'] != arr[i+1]['sb']):
+            if i == len(arr) - 1:
+                arr[i]['rank'] = " "
+            arr[start:i + 1] = list(sorted(arr[start:i + 1], key=lambda el: el['name'].split(' ')[1]))
+            arr[start]['rank'] = rank
+            duplicate = False
+        else:
+            arr[i]['rank'] = rank
+            rank += 1
+    return arr
 
 
     # print(template_score)
@@ -88,43 +102,39 @@ d, _ = 0.5, None
 #     [d, 1, d, d, _, d],
 #     [1, 1, d, d, d, _]]))
 
-#
-# def crosstable(players, results):
-#     table = [dict(name=pl, result=res, pts=sum(res[:i] + res[i+1:]))
-#              for pl, res, i in zip(players, results, range(len(players)))]
-#     pts = [row['pts'] for row in table]
-#     sb = dict()
-#     for row in table:
-#         row['sb'] = sum([row['result'][i] * pts[i] for i in range(len(players)) if row['result'][i] is not None])
-#         sb[row['sb']] = [row] if sb.get(row['sb'], None) is None else sb[row['sb']] + [row]
-#
-#     # print(table)
-#     # print(sb)
-#
-# d, _ = 0.5, None
-#
+
 # print(crosstable([
-#     'Emmett Frost', 'Cruz Sullivan', 'Deandre Bullock', 'George Bautista', 'Norah Underwood', 'Renee Preston'], [
-#     [_, 1, 0, 0, d, 0],
-#     [0, _, d, 1, 0, 0],
-#     [1, d, _, d, d, d],
-#     [1, 0, d, _, d, d],
-#     [d, 1, d, d, _, d],
-#     [1, 1, d, d, d, _]]))
-
-
-print(crosstable([
-    'Trystan Randall', 'Pamela Glass', 'Coleman Serrano', 'Brycen Beasley', 'Wayne Allison', 'Natalia Powell',
-    'Carlos Koch', 'Emilio Mejia', 'Lennon Rollins', 'Madilynn Huerta'], [
-    [_, 1, 1, 0, 1, 1, d, d, 0, 1],
-    [0, _, d, 0, d, d, 1, 0, 1, 0],
-    [0, d, _, 0, 0, d, 0, 0, 1, 1],
-    [1, 1, 1, _, d, 1, d, 1, 1, d],
-    [0, d, 1, d, _, 0, d, 0, d, d],
-    [0, d, d, 0, 1, _, 1, 1, 1, d],
-    [d, 0, 1, d, d, 0, _, 0, d, d],
-    [d, 1, 1, 0, 1, 0, 1, _, d, d],
-    [1, 0, 0, 0, d, 0, d, d, _, 0],
-    [0, 1, 0, d, d, d, d, d, 1, _]]))
+#     'Trystan Randall', 'Pamela Glass', 'Coleman Serrano', 'Brycen Beasley', 'Wayne Allison', 'Natalia Powell',
+#     'Carlos Koch', 'Emilio Mejia', 'Lennon Rollins', 'Madilynn Huerta'], [
+#     [_, 1, 1, 0, 1, 1, d, d, 0, 1],
+#     [0, _, d, 0, d, d, 1, 0, 1, 0],
+#     [0, d, _, 0, 0, d, 0, 0, 1, 1],
+#     [1, 1, 1, _, d, 1, d, 1, 1, d],
+#     [0, d, 1, d, _, 0, d, 0, d, d],
+#     [0, d, d, 0, 1, _, 1, 1, 1, d],
+#     [d, 0, 1, d, d, 0, _, 0, d, d],
+#     [d, 1, 1, 0, 1, 0, 1, _, d, d],
+#     [1, 0, 0, 0, d, 0, d, d, _, 0],
+#     [0, 1, 0, d, d, d, d, d, 1, _]]))
 # ' 2  Trystan Randall   0     1  =  1  =  1  0  1  1  6.0  24.50'
 # ' 2  Trystan Randall   0     1  =  1  =  1  1  1  0  6.0  24.50'
+
+print(crosstable([
+    'K. Kel', 'A. Vau', 'Z. Aya', 'J. Coc', 'M. Hue', 'A. Sim', 'C. Yan', 'J. Wal',
+    'M. Hor', 'L. Ell', 'H. Mic', 'P. Bla', 'L. Lan', 'M. Rid', 'M. Bec', 'J. Gat'], [
+    [_, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, _, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [1, 1, _, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, _, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 1, _, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1],
+    [1, 1, 1, 1, 0, _, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 0, _, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+    [1, 1, 1, 1, 1, 1, 0, _, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, _, 0, 0, 1, 0, 1, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, _, 0, 0, 0, 0, 0, 0],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, _, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, _, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, _, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, _, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, _, 0],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, _]]))
