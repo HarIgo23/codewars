@@ -21,9 +21,7 @@ def crosstable(players, results):
     template_one_score = f"{{: >{l_one_score}}}"
     header = template_rank.format('#') + \
              template.format('Player', " ".join([template_one_score.format(i) for i in range(1, count+1)])) + \
-             template_score_header.format("Pts", "SB").rstrip() + "\n"
-    delimiter = "=" * row_len + '\n'
-    result = header + delimiter
+             template_score_header.format("Pts", "SB").rstrip() + "\n" + ("=" * row_len) + '\n'
     score = []
     for res in results:
         score.append([template_one_score.format(" " if el is None else int(el) if el != 0.5 else "=") for el in res])
@@ -44,6 +42,7 @@ def crosstable(players, results):
         elif not duplicate:
             sort_pts[i]['rank'] = i + 1
     order = [rank['ind'] for rank in sort_pts]
+    result = header
     for rank in sort_pts:
         el = rank
         el['res'] = [el['res'][order[i]] for i in range(count)]
