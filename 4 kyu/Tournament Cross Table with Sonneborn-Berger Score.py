@@ -13,17 +13,15 @@ def crosstable(players, results):
     l_pts, l_sb = max([len(template_pts.format(num)) for num in pts]), max([len(template_sb.format(num)) for num in sb])
     row_len = l_rank + l_pl + l_score + l_pts + l_sb + 8  # 8 is count sep between columns
 
-    template_rank = f"{{: >{l_rank}}}  "
-    template = f"{{: <{l_pl}}}  {{: >{l_score}}}  "
-    template_score = f"{{:>{l_pts}.1f}}  {{:>{l_sb}.2f}}"
-    template_score_header = f"{{: ^{l_pts}}}  {{: ^{l_sb}}}"
-    template_one_score = f"{{: >{l_one_score}}}"
-    header = template_rank.format('#') + \
-             template.format('Player', " ".join([template_one_score.format(i) for i in range(1, count+1)])) + \
-             template_score_header.format("Pts", "SB").rstrip() + "\n" + ("=" * row_len) + '\n'
+    template_rank = f"{{: >{l_rank}}}  {{: <{l_pl}}}  {{: >{l_score}}}  "
+    template_stat = f"{{:>{l_pts}.1f}}  {{:>{l_sb}.2f}}"
+    template_stat_header = f"{{: ^{l_pts}}}  {{: ^{l_sb}}}"
+    template_score = f"{{: >{l_one_score}}}"
+    header = template_rank.format('#', 'Player', " ".join([template_score.format(i) for i in range(1, count + 1)])) + \
+        template_stat_header.format("Pts", "SB").rstrip() + "\n" + ("=" * row_len) + '\n'
     score = []
     for res in results:
-        score.append([template_one_score.format(" " if el is None else int(el) if el != 0.5 else "=") for el in res])
+        score.append([template_score.format(" " if el is None else int(el) if el != 0.5 else "=") for el in res])
 
     sort_pts = list(sorted([dict(pts=pts[i], sb=sb[i], ind=i, name=players[i], res=score[i]) for i in range(count)],
                            key=lambda el: el['pts'], reverse=True))
@@ -42,8 +40,8 @@ def crosstable(players, results):
     result = header
     for row in sort_pts:
         row['res'] = [row['res'][order[i]] for i in range(count)]
-        result += template_rank.format(row['rank']) + template.format(row["name"], " ".join(row['res'])) + \
-            template_score.format(row['pts'], row['sb']) + "\n"
+        result += template_rank.format(row['rank'], row["name"], " ".join(row['res'])) + \
+            template_stat.format(row['pts'], row['sb']) + "\n"
     return result.rstrip()
 
 
